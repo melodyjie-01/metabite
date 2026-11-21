@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>快拍下饭吧 · MetaBite 赛博幽灵食堂</title>
+<!-- MetaBite 前端 · Monad Blitz @广州 2026-11-21 当天编写 -->
+<style>
+:root{
+  --ink:#151515;
+  --accent:#00c9a7;
+  --accent2:#7b5cff;
+  --paper:#ffffff;
+  --px:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--paper);color:var(--ink)}
+body{
+  font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  min-height:100vh;
+  display:flex;flex-direction:column;align-items:center;
+  padding:20px 16px 32px;
+}
+.mono{font-family:ui-monospace,Consolas,"Courier New",monospace}
+header{width:100%;max-width:960px;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+h1{font-size:clamp(26px,5vw,40px);letter-spacing:2px;border-bottom:4px solid var(--ink);padding-bottom:4px;transform:rotate(-1deg)}
+.badge{font-size:12px;letter-spacing:3px;border:2px solid var(--ink);padding:3px 10px;background:var(--accent);box-shadow:3px 3px 0 var(--ink);transform:rotate(1deg);user-select:none}
+.sub{font-size:13px;opacity:.65;width:100%}
+#modebar{width:100%;max-width:960px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;font-size:12px}
+#modebar button{font-size:12px;font-weight:700;letter-spacing:1px;padding:6px 12px;border:2px solid var(--ink);border-radius:6px;background:var(--paper);cursor:pointer;box-shadow:2px 2px 0 var(--ink)}
+#modebar button.on{background:var(--accent)}
+#modeStatus{opacity:.75}
+main{
+  width:100%;max-width:960px;
+  display:grid;grid-template-columns:1fr 1fr;gap:22px;
+  border:3px solid var(--ink);
+  border-radius:255px 15px 225px 15px/15px 225px 15px 255px;
+  padding:22px;
+  box-shadow:6px 6px 0 rgba(21,21,21,.12);
+}
+@media (max-width:720px){main{grid-template-columns:1fr;padding:16px}}
+.panel-title{font-size:14px;letter-spacing:2px;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.panel-title::before{content:"";width:10px;height:10px;background:var(--ink);display:inline-block}
+#dropzone{border:3px dashed var(--ink);border-radius:12px 4px 12px 4px;min-height:180px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;cursor:pointer;padding:14px;position:relative;overflow:hidden;transition:background .15s,transform .15s}
+#dropzone:hover,#dropzone.drag{background:#f2f2f2;transform:translateY(-2px)}
+#dropzone .cam{width:56px;height:44px;border:3px solid var(--ink);border-radius:6px;position:relative;background:var(--paper)}
+#dropzone .cam::before{content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:20px;height:20px;border:3px solid var(--ink);border-radius:50%}
+#dropzone .cam::after{content:"";position:absolute;top:-9px;left:10px;width:16px;height:8px;border:3px solid var(--ink);border-bottom:none;border-radius:4px 4px 0 0}
+#dropzone p{font-size:14px}
+#dropzone .hint{font-size:12px;opacity:.55}
+#preview{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;image-rendering:pixelated}
+#result{margin-top:14px;border:3px solid var(--ink);border-radius:4px 12px 4px 12px;padding:12px 14px;display:none;background:#fffdf2;box-shadow:4px 4px 0 var(--ink)}
+#result .kcal{font-size:clamp(24px,4vw,32px);font-weight:700;letter-spacing:1px}
+#result .kcal em{font-style:normal;color:var(--accent2)}
+#result .meta{font-size:12px;opacity:.6;margin-top:4px}
+#retake{margin-top:10px;font-size:12px;background:none;border:none;text-decoration:underline dotted;cursor:pointer;color:var(--ink);padding:4px 0}
+#feedBtn{margin-top:16px;width:100%;font-size:18px;letter-spacing:6px;font-weight:700;padding:14px 0;border:3px solid var(--ink);border-radius:8px;background:#e8e8e8;color:#9a9a9a;box-shadow:5px 5px 0 #c9c9c9;cursor:not-allowed;transition:transform .12s,box-shadow .12s;touch-action:manipulation}
+#feedBtn.ready{background:var(--accent);color:var(--ink);box-shadow:5px 5px 0 var(--ink);cursor:pointer;animation:pulse 1.6s infinite}
+#feedBtn.ready:active{transform:translate(3px,3px);box-shadow:2px 2px 0 var(--ink);animation:none}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.02)}}
+#stats{margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;font-size:12px}
+#stats .cell{border:2px solid var(--ink);border-radius:6px;padding:6px 10px;background:var(--paper)}
+#stats b{font-size:15px}
+#expwrap{margin-top:10px}
+#expbar{height:14px;border:2px solid var(--ink);border-radius:7px;overflow:hidden;background:repeating-linear-gradient(90deg,#f3f3f3 0 6px,#fff 6px 12px)}
+#expfill{height:100%;width:0%;background:var(--accent2);transition:width .6s cubic-bezier(.2,.9,.3,1.3)}
+#explabel{font-size:11px;margin-top:4px;opacity:.7}
+#addrrow{display:none;margin-top:10px;font-size:11px;align-items:center;gap:8px}
+#addrrow .mono{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#addrrow button,#txrow button{font-size:11px;padding:3px 8px;border:2px solid var(--ink);border-radius:5px;background:var(--paper);cursor:pointer}
+.ghoststage{display:flex;flex-direction:column;align-items:center;position:relative;min-width:0;padding-top:6px}
+#bubble{max-width:260px;border:3px solid var(--ink);border-radius:10px 3px 10px 3px;background:var(--paper);box-shadow:4px 4px 0 var(--ink);padding:10px 14px;font-size:15px;position:relative;margin-bottom:26px;min-height:42px;display:flex;align-items:center}
+#bubble::after{content:"";position:absolute;left:26px;bottom:-14px;width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-top:14px solid var(--ink)}
+#bubble span{display:inline-block}
+#bubble.pop span{animation:pop .35s cubic-bezier(.2,1.6,.4,1)}
+@keyframes pop{0%{transform:scale(.6);opacity:0}100%{transform:scale(1);opacity:1}}
+#ghostWrap{position:relative;transition:transform .5s cubic-bezier(.2,1.5,.4,1)}
+#ghost{width:calc(var(--px)*14);height:calc(var(--px)*13);position:relative;animation:float 3s ease-in-out infinite}
+#ghost i{position:absolute;left:0;top:0;width:var(--px);height:var(--px);display:block}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+#shadow{width:calc(var(--px)*10);height:10px;background:rgba(21,21,21,.15);border-radius:50%;margin-top:14px;animation:shrink 3s ease-in-out infinite}
+@keyframes shrink{0%,100%{transform:scaleX(1)}50%{transform:scaleX(.8)}}
+@media (max-width:720px){:root{--px:10px}}
+@media (min-width:1100px){:root{--px:14px}}
+.crumb{position:absolute;left:50%;top:45%;width:8px;height:8px;background:var(--ink);pointer-events:none;will-change:transform,opacity}
+#flyfood{position:fixed;z-index:60;width:34px;height:34px;border:3px solid var(--ink);background:var(--accent);display:none;will-change:transform,opacity;pointer-events:none}
+#mask{position:fixed;inset:0;z-index:50;background:rgba(21,21,21,.45);display:none;align-items:center;justify-content:center;padding:16px}
+#mask.show{display:flex}
+#wallet{width:100%;max-width:400px;background:var(--paper);border:3px solid var(--ink);border-radius:14px 4px 14px 4px;box-shadow:8px 8px 0 rgba(21,21,21,.85);padding:18px;animation:rise .25s cubic-bezier(.2,1.4,.4,1)}
+@keyframes rise{0%{transform:translateY(24px) scale(.95);opacity:0}100%{transform:none;opacity:1}}
+#wallet h2{font-size:15px;letter-spacing:1px;display:flex;align-items:center;gap:8px;margin-bottom:12px}
+#wallet h2 .fox{width:22px;height:22px;background:var(--accent2);border:2px solid var(--ink);border-radius:4px;position:relative;flex:none}
+#wallet h2 .fox::before,#wallet h2 .fox::after{content:"";position:absolute;top:-7px;width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:7px solid var(--accent2)}
+#wallet h2 .fox::before{left:-1px}
+#wallet h2 .fox::after{right:-1px}
+.kv{display:flex;justify-content:space-between;gap:10px;font-size:12px;padding:7px 0;border-bottom:1px dashed #ccc}
+.kv .k{opacity:.6;flex:none}
+.kv .v{text-align:right;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#wallet .btns{display:flex;gap:10px;margin-top:16px}
+#wallet .btns button{flex:1;font-size:15px;font-weight:700;letter-spacing:2px;padding:11px 0;border:3px solid var(--ink);border-radius:8px;cursor:pointer;touch-action:manipulation}
+#rejectBtn{background:var(--paper);box-shadow:3px 3px 0 var(--ink)}
+#signBtn{background:var(--accent);box-shadow:3px 3px 0 var(--ink)}
+#signBtn:disabled{opacity:.6;cursor:wait}
+#txrow{display:none;margin-top:14px;border:2px solid var(--accent);border-radius:8px;padding:10px;font-size:12px;background:#f0fffb}
+#txrow .hash{word-break:break-all;font-size:11px;margin-top:4px}
+#txrow .btns{display:flex;gap:8px;margin-top:8px}
+#wallet .note{font-size:11px;opacity:.5;margin-top:12px;text-align:center}
+footer{margin-top:22px;font-size:12px;opacity:.55;text-align:center;letter-spacing:1px}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>快拍下饭吧</h1>
+  <span class="badge mono">META·BITE</span>
+  <p class="sub">赛博幽灵食堂 · 你的每一顿饭，都在链上刻下永恒的记忆</p>
+</header>
+
+<div id="modebar" class="mono">
+  <button id="modeLive" type="button">真链模式</button>
+  <button id="modeMock" type="button" class="on">Mock 兜底</button>
+  <span id="modeStatus">当前为 Mock 演示；点真链模式连接钱包</span>
+</div>
+
+<main>
+  <section aria-label="投喂区">
+    <div class="panel-title mono">STEP 1 · 拍下你的饭</div>
+    <div id="dropzone" role="button" tabindex="0" aria-label="上传食物照片">
+      <div class="cam" aria-hidden="true"></div>
+      <p>点击上传 / 拖拽食物照片</p>
+      <span class="hint mono">jpg · png · 支持手机拍照</span>
+      <img id="preview" alt="食物照片预览">
+    </div>
+    <input type="file" id="fileInput" accept="image/*" hidden>
+
+    <div id="result">
+      <div class="kcal mono">识别到 ≈ <em id="kcalNum">0</em> kcal</div>
+      <div class="meta mono" id="recogMeta"></div>
+      <button id="retake" type="button">↺ 重拍一份</button>
+    </div>
+
+    <button id="feedBtn" type="button" disabled>投 喂</button>
+
+    <div id="stats">
+      <div class="cell mono">累计干饭 <b id="totalKcal">0</b> kcal</div>
+      <div class="cell mono">投喂 <b id="feedCount">0</b> 次</div>
+      <div class="cell mono" id="lvCell">Lv.1 饿饿鬼</div>
+    </div>
+    <div id="expwrap">
+      <div id="expbar"><div id="expfill"></div></div>
+      <div id="explabel" class="mono"></div>
+    </div>
+    <div id="addrrow" class="mono">钱包 <span id="myAddr"></span><button id="copyAddr" type="button">复制地址</button></div>
+  </section>
+
+  <section class="ghoststage" aria-label="幽灵区">
+    <div id="bubble"><span id="bubbleText">饿饿…饭饭</span></div>
+    <div id="ghostWrap"><div id="ghost"><i id="pxA"></i><i id="pxB"></i></div></div>
+    <div id="shadow" aria-hidden="true"></div>
+  </section>
+</main>
+
+<div id="flyfood" aria-hidden="true"></div>
+
+<div id="mask" role="dialog" aria-modal="true" aria-label="投喂确认">
+  <div id="wallet">
+    <h2><span class="fox" aria-hidden="true"></span><span id="wTitle">钱包扩展 · 签名请求</span><span class="mono" id="wTag" style="margin-left:auto;font-size:10px;opacity:.5">SIMULATION</span></h2>
+    <div class="kv"><span class="k">账户</span><span class="v mono" id="wAccount"></span></div>
+    <div class="kv"><span class="k">网络</span><span class="v mono">Monad Testnet (id 10143)</span></div>
+    <div class="kv"><span class="k">合约方法</span><span class="v mono">feed(uint256 kcal)</span></div>
+    <div class="kv"><span class="k">参数</span><span class="v mono" id="wCalldata"></span></div>
+    <div class="btns">
+      <button id="rejectBtn" type="button">取消</button>
+      <button id="signBtn" type="button">确认签名</button>
+    </div>
+    <div id="txrow" class="mono">
+      ✅ 交易已确认 · <b id="txTime"></b>（Monad 600ms 最终性）
+      <div class="hash" id="txHash"></div>
+      <div class="btns">
+        <button id="copyHash" type="button">复制哈希</button>
+        <button id="openExplorer" type="button">浏览器查看</button>
+      </div>
+    </div>
+    <p class="note mono" id="wNote">纯前端模拟签名，不连接任何真实钱包或合约</p>
+  </div>
+</div>
+
+<footer class="mono">MetaBite 赛博幽灵食堂 · Monad Blitz @ 广州 · 2026-11-21 · 感知层 Mock / 账本层真链</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"></script>
+<script src="./abi-inline.js"></script>
+<script src="./connect.js"></script>
+<script>
+'use strict';
+var $ = function(id){ return document.getElementById(id); };
+var state = { kcal:null, busy:false, total:0, feeds:0, mode:'mock', account:null };
+try{
+  var saved = JSON.parse(localStorage.getItem('metabite_mock_v2') || '{}');
+  if (typeof saved.total === 'number') state.total = saved.total;
+  if (typeof saved.feeds === 'number') state.feeds = saved.feeds;
+}catch(e){}
+function persistMock(){
+  try{ localStorage.setItem('metabite_mock_v2', JSON.stringify({total:state.total, feeds:state.feeds})); }catch(e){}
+}
+function randHex(n){
+  var s='0x', c='0123456789abcdef';
+  for(var i=0;i<n;i++) s += c[Math.floor(Math.random()*16)];
+  return s;
+}
+function copyText(t){
+  if (navigator.clipboard) { navigator.clipboard.writeText(t); return; }
+  var ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select();
+  try{ document.execCommand('copy'); }catch(e){}
+  ta.remove();
+}
+
+/* 像素幽灵 */
+var MAP = [
+  '....######....',
+  '..##########..',
+  '.##ooooooo##..',
+  '.#o.......o##.',
+  '#o.........o##',
+  '#o.@@...@@.o##',
+  '#o.@@...@@.o##',
+  '#o.........o##',
+  '#o...#.#...o##',
+  '#o....#....o##',
+  '#o.........o##',
+  '#o.........o##',
+  '##oo##oo##oo##'
+];
+(function renderGhost(){
+  var inkSh=[], accSh=[];
+  for(var y=0;y<MAP.length;y++){
+    for(var x=0;x<MAP[y].length;x++){
+      var ch = MAP[y][x];
+      if(ch==='.'||ch==='o') continue;
+      var off = 'calc(var(--px)*'+x+') calc(var(--px)*'+y+') 0 0';
+      if(ch==='@') accSh.push(off+' var(--accent)'); else inkSh.push(off+' var(--ink)');
+    }
+  }
+  $('pxA').style.boxShadow = inkSh.join(',');
+  $('pxB').style.boxShadow = accSh.join(',');
+})();
+
+/* 气泡 */
+var bubbleTimer = null;
+function say(text, hold){
+  $('bubbleText').textContent = text;
+  var b = $('bubble');
+  b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop');
+  if(hold){ clearTimeout(bubbleTimer); bubbleTimer = setTimeout(idleChatter, hold); }
+}
+var IDLE_LINES = ['饿饿…饭饭','今天吃什么？拍给我看','胃是空的，链也是','盯 ——'];
+var idleIdx = 0;
+function idleChatter(){ say(IDLE_LINES[idleIdx % IDLE_LINES.length]); idleIdx++; }
+setInterval(function(){ if(!state.busy && state.kcal===null) idleChatter(); }, 6000);
+
+/* 等级（与合约 levelOf 门槛一致） */
+var LEVELS = [
+  {min:0,      name:'Lv.1 饿饿鬼'},
+  {min:1000,   name:'Lv.2 干饭鬼'},
+  {min:5000,   name:'Lv.3 大胃王鬼'},
+  {min:20000,  name:'Lv.4 赛博饕餮'},
+  {min:100000, name:'Lv.5 宇宙级饭桶'}
+];
+function levelInfo(){
+  var lv = 0;
+  for(var i=0;i<LEVELS.length;i++){ if(state.total >= LEVELS[i].min) lv = i; }
+  return lv;
+}
+function refreshStats(){
+  $('totalKcal').textContent = state.total;
+  $('feedCount').textContent = state.feeds;
+  var lv = levelInfo();
+  $('lvCell').textContent = LEVELS[lv].name;
+  var next = LEVELS[lv+1], base = LEVELS[lv].min;
+  if(next){
+    $('expfill').style.width = Math.min(100, Math.round((state.total-base)/(next.min-base)*100)) + '%';
+    $('explabel').textContent = '距离进化还差 ' + Math.max(0, next.min-state.total) + ' kcal';
+  }else{
+    $('expfill').style.width = '100%';
+    $('explabel').textContent = '已满级 · 胃即宇宙';
+  }
+  $('ghostWrap').style.transform = 'scale(' + (1 + Math.min(0.55, state.total/60000)).toFixed(3) + ')';
+  return lv;
+}
+var curLv = refreshStats();
+
+/* 模式切换 */
+function setMode(m){
+  state.mode = m;
+  $('modeLive').classList.toggle('on', m==='live');
+  $('modeMock').classList.toggle('on', m==='mock');
+  $('modeStatus').textContent = m==='live' ? '真链模式：投喂将请求钱包签名并上链' : '当前为 Mock 演示；点真链模式连接钱包';
+  $('addrrow').style.display = (m==='live' && state.account) ? 'flex' : 'none';
+}
+$('modeMock').addEventListener('click', function(){ setMode('mock'); say('回到彩排模式～'); });
+$('modeLive').addEventListener('click', async function(){
+  if (typeof window.ethereum === 'undefined') { say('没检测到钱包扩展，先装 MetaMask / Phantom'); return; }
+  if (typeof window.METABITE === 'undefined' || !window.METABITE.address || /^0x0+$/.test(window.METABITE.address)) {
+    say('合约还没部署，先用 Mock 兜底'); return;
+  }
+  try{
+    say('连接钱包中…');
+    var info = await window.MetaBiteConnect.connect();
+    state.account = info.account;
+    state.total = info.totalKcal; state.feeds = info.meals;
+    $('myAddr').textContent = info.account;
+    setMode('live'); refreshStats();
+    say('连上了！链上档案已加载', 4000);
+  }catch(e){
+    say('连接失败：' + (e.message || e));
+  }
+});
+$('copyAddr').addEventListener('click', function(){ copyText(state.account || ''); say('地址已复制'); });
+
+/* 上传与识别（感知层 Mock，诚实标注） */
+var dropzone = $('dropzone'), fileInput = $('fileInput');
+dropzone.addEventListener('click', function(){ if(!state.busy) fileInput.click(); });
+dropzone.addEventListener('keydown', function(ev){ if(ev.key==='Enter'||ev.key===' ') fileInput.click(); });
+['dragover','dragenter'].forEach(function(t){ dropzone.addEventListener(t, function(ev){ ev.preventDefault(); dropzone.classList.add('drag'); }); });
+['dragleave','drop'].forEach(function(t){ dropzone.addEventListener(t, function(ev){ ev.preventDefault(); dropzone.classList.remove('drag'); }); });
+dropzone.addEventListener('drop', function(ev){ if(ev.dataTransfer && ev.dataTransfer.files[0]) handleFile(ev.dataTransfer.files[0]); });
+fileInput.addEventListener('change', function(){ if(fileInput.files[0]) handleFile(fileInput.files[0]); });
+function handleFile(file){
+  if(!/^image\//.test(file.type)){ say('这张…好像不是饭？'); return; }
+  resetRecognition();
+  var reader = new FileReader();
+  reader.onload = function(){
+    $('preview').src = String(reader.result);
+    $('preview').style.display = 'block';
+    runMockRecognition();
+  };
+  reader.onerror = function(){ say('照片没读出来，再拍一张试试'); };
+  reader.readAsDataURL(file);
+}
+function runMockRecognition(){
+  state.busy = true;
+  $('result').style.display = 'block';
+  $('kcalNum').textContent = '…';
+  $('recogMeta').textContent = '感知层 Mock：随机估算卡路里（真 AI 识别为路线图）';
+  $('feedBtn').classList.remove('ready'); $('feedBtn').disabled = true;
+  say('让我闻闻…');
+  var ms = 600 + Math.floor(Math.random()*500);
+  setTimeout(function(){
+    var kcal = 250 + Math.floor(Math.random()*71)*10;
+    state.kcal = kcal;
+    $('kcalNum').textContent = kcal;
+    $('recogMeta').textContent = '识别耗时 ' + ms + 'ms · 结果将打包为链上能量';
+    $('feedBtn').disabled = false; $('feedBtn').classList.add('ready');
+    say('闻到了！这是 ≈' + kcal + ' kcal 的能量！', 5000);
+    state.busy = false;
+  }, ms);
+}
+function resetRecognition(){
+  state.kcal = null;
+  $('result').style.display = 'none';
+  $('feedBtn').disabled = true; $('feedBtn').classList.remove('ready');
+}
+$('retake').addEventListener('click', function(ev){
+  ev.stopPropagation();
+  $('preview').style.display = 'none'; $('preview').removeAttribute('src');
+  fileInput.value = '';
+  resetRecognition();
+  say('好，等你的下一顿！');
+});
+
+/* 投喂确认弹窗：Mock 演签名 / 真链等钱包 */
+var mask = $('mask');
+var mockAccount = randHex(6) + '…' + randHex(4);
+var lastHash = null;
+function openWallet(){
+  var live = state.mode === 'live';
+  $('wTitle').textContent = live ? '真实钱包 · 签名请求' : '钱包扩展 · 签名请求';
+  $('wTag').textContent = live ? 'MONAD TESTNET' : 'SIMULATION';
+  $('wAccount').textContent = live ? (state.account || '') : mockAccount;
+  $('wCalldata').textContent = state.kcal + ' kcal';
+  $('txrow').style.display = 'none';
+  $('signBtn').disabled = false; $('signBtn').textContent = live ? '去钱包签名' : '确认签名';
+  $('rejectBtn').disabled = false;
+  $('wNote').textContent = live ? '签名在真实钱包完成；本页不接触私钥' : '纯前端模拟签名，不连接任何真实钱包或合约';
+  mask.classList.add('show');
+  state.busy = true;
+}
+function closeWallet(){ mask.classList.remove('show'); }
+$('feedBtn').addEventListener('click', function(){
+  if(state.kcal===null || state.busy) return;
+  openWallet();
+  if(state.mode==='live') liveFeed();
+});
+$('rejectBtn').addEventListener('click', function(){ closeWallet(); state.busy=false; say('不喂了吗…那我再饿一会儿'); });
+mask.addEventListener('click', function(ev){ if(ev.target===mask && !$('signBtn').disabled){ closeWallet(); state.busy=false; } });
+$('signBtn').addEventListener('click', function(){
+  if(state.mode==='live'){ say('请在钱包扩展里点确认…'); return; }
+  $('signBtn').disabled = true; $('rejectBtn').disabled = true;
+  $('signBtn').textContent = '签名中…';
+  setTimeout(function(){
+    var t = (0.3 + Math.random()*0.3).toFixed(2);
+    lastHash = randHex(64);
+    showReceipt(t, lastHash, null);
+    setTimeout(function(){ closeWallet(); feast(state.kcal, false); }, 1100);
+  }, 650);
+});
+function showReceipt(seconds, hash, explorerUrl){
+  $('txTime').textContent = seconds + 's';
+  $('txHash').textContent = hash;
+  $('openExplorer').style.display = explorerUrl ? 'inline-block' : 'none';
+  $('openExplorer').dataset.url = explorerUrl || '';
+  $('txrow').style.display = 'block';
+}
+$('copyHash').addEventListener('click', function(){ copyText(lastHash || ''); });
+$('openExplorer').addEventListener('click', function(){ if(this.dataset.url) window.open(this.dataset.url, '_blank'); });
+
+async function liveFeed(){
+  $('signBtn').disabled = true; $('rejectBtn').disabled = true;
+  $('signBtn').textContent = '等待钱包…';
+  try{
+    var t0 = performance.now();
+    var res = await window.MetaBiteConnect.feed(state.kcal);
+    var secs = ((performance.now()-t0)/1000).toFixed(2);
+    lastHash = res.receipt.hash;
+    showReceipt(secs, lastHash, window.MetaBiteConnect.explorerTx(lastHash));
+    state.total = res.totalKcal; state.feeds = res.meals;
+    setTimeout(function(){ closeWallet(); feast(state.kcal, true); }, 900);
+  }catch(e){
+    closeWallet(); state.busy = false;
+    say('上链失败：' + (e.shortMessage || e.message || e));
+  }
+}
+
+/* 进食动画与结算 */
+function feast(kcal, fromChain){
+  var dz = dropzone.getBoundingClientRect();
+  var gh = $('ghost').getBoundingClientRect();
+  var fly = $('flyfood');
+  var x0 = dz.left + dz.width/2 - 17, y0 = dz.top + dz.height/2 - 17;
+  var x1 = gh.left + gh.width/2 - 17, y1 = gh.top + gh.height*0.55 - 17;
+  fly.style.left = x0+'px'; fly.style.top = y0+'px'; fly.style.display = 'block';
+  var flight = fly.animate([
+    {transform:'translate(0,0) scale(1) rotate(0deg)', opacity:1},
+    {transform:'translate('+(x1-x0)+'px,'+(y1-y0)+'px) scale(.4) rotate(180deg)', opacity:1}
+  ], {duration:520, easing:'cubic-bezier(.4,0,.7,.6)'});
+  flight.onfinish = function(){ fly.style.display='none'; chomp(kcal, fromChain); };
+}
+function chomp(kcal, fromChain){
+  var wrap = $('ghostWrap');
+  wrap.animate([
+    {transform:wrap.style.transform+' scale(1,1)'},
+    {transform:wrap.style.transform+' scale(1.18,.82)'},
+    {transform:wrap.style.transform+' scale(.92,1.12)'},
+    {transform:wrap.style.transform+' scale(1,1)'}
+  ], {duration:480, easing:'ease-out'});
+  burst(16);
+  if(!fromChain){ state.total += kcal; state.feeds += 1; persistMock(); }
+  var prevLv = curLv;
+  curLv = refreshStats();
+  var lines = ['好吃好吃！','饱饱！+'+kcal+' EXP','链上干饭，秒级到账','Monad 的饭，秒没','嗝——'];
+  if(curLv > prevLv){ say('我进化了！现在是 ' + LEVELS[curLv].name + ' ！', 4000); burst(22); }
+  else { say(lines[state.feeds % lines.length], 4000); }
+  resetRecognition();
+  state.busy = false;
+}
+function burst(n){
+  var stage = $('ghostWrap');
+  for(var i=0;i<n;i++){
+    (function(i){
+      var c = document.createElement('span');
+      c.className = 'crumb';
+      if(i%3===0) c.style.background='var(--accent)';
+      if(i%5===0) c.style.background='var(--accent2)';
+      stage.appendChild(c);
+      var ang = Math.random()*Math.PI*2, dist = 40+Math.random()*70;
+      var dx = Math.cos(ang)*dist, dy = Math.sin(ang)*dist-30;
+      var rot = (Math.random()*360)|0, dur = 500+Math.random()*400;
+      var anim = c.animate([
+        {transform:'translate(0,0) rotate(0deg)', opacity:1},
+        {transform:'translate('+dx+'px,'+dy+'px) rotate('+rot+'deg)', opacity:0}
+      ], {duration:dur, easing:'cubic-bezier(.1,.8,.3,1)'});
+      anim.onfinish = function(){ c.remove(); };
+    })(i);
+  }
+}
+$('bubbleText').textContent = state.feeds > 0 ? '再来一顿！上次那 ' + state.total + ' kcal 很赞' : '饿饿…饭饭';
+</script>
+</body>
+</html>
