@@ -1,0 +1,13 @@
+# MetaBite · 2026-11-21 当天编写
+node_modules/
+.env
+.env.*
+!.env.example
+cache/
+artifacts/
+coverage/
+coverage.json
+typechain-types/
+__pycache__/
+*.pyc
+.DS_Store
