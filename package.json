@@ -1,0 +1,17 @@
+{
+  "name": "metabite",
+  "version": "1.0.0",
+  "description": "MetaBite 赛博幽灵食堂 · Monad Blitz @广州 2026-11-21 当天编写",
+  "license": "MIT",
+  "scripts": {
+    "test": "hardhat test",
+    "compile": "hardhat compile",
+    "deploy": "hardhat run scripts/deploy.js --network monad-testnet",
+    "serve": "npx --yes serve frontend -l 8080"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "dotenv": "^16.4.5",
+    "hardhat": "^2.22.10"
+  }
+}
